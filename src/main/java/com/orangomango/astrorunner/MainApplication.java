@@ -18,8 +18,14 @@ import java.util.HashMap;
 public class MainApplication extends Application{
 	public static final int WIDTH = 800;
 	public static final int HEIGHT = 600;
+	private static final int WINDOW_WIDTH = 800;
+	private static final int WINDOW_HEIGHT = 600;
+	private static final double SCALE = (double)WINDOW_HEIGHT/HEIGHT;
+	private static final double OFFSET_X = (WINDOW_WIDTH-WIDTH*SCALE)/2;
+
 	private static final Font FONT = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 25);
 	private static final Font FONT_BIG = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 35);
+	private static final Font FONT_SMALL = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 15);
 
 	private ArrayList<Obstacle> obstacles = new ArrayList<>();
 	private int updateDelay = 50;
@@ -31,11 +37,14 @@ public class MainApplication extends Application{
 	private Player player;
 	private volatile boolean gamePaused = true;
 	private boolean gameOver = false;
+	private boolean playerShield;
+	private volatile long lastSlowDown = -1;
+	private boolean cooldwon = false;
 
 	@Override
 	public void start(Stage stage){
 		StackPane pane = new StackPane();
-		Canvas canvas = new Canvas(WIDTH, HEIGHT);
+		Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
 		GraphicsContext gc = canvas.getGraphicsContext2D();
 		gc.setImageSmoothing(false);
 		pane.getChildren().add(canvas);
@@ -81,10 +90,10 @@ public class MainApplication extends Application{
 						this.lastScore = this.score;
 					}
 
-					final double speed = calculateSpeed(this.updateDelay);
-					this.distanceTravelled += this.updateDelay/(1000.0*60*60)*speed*1000;
-
-					Thread.sleep(this.updateDelay);
+					final int delay = this.updateDelay*(this.lastSlowDown >= 0 ? 2 : 1);
+					final double speed = Util.calculateSpeed(delay);
+					this.distanceTravelled += delay/(1000.0*60*60)*speed*1000;
+					Thread.sleep(delay);
 				} catch (InterruptedException ex){
 					ex.printStackTrace();
 				}
@@ -93,19 +102,23 @@ public class MainApplication extends Application{
 		loop.setDaemon(true);
 		loop.start();
 
-		Scene scene = new Scene(pane, WIDTH, HEIGHT);
+		Scene scene = new Scene(pane, WINDOW_WIDTH, WINDOW_HEIGHT);
 		scene.setFill(Color.BLACK);
 
 		stage.setScene(scene);
-		stage.setTitle("Color Tunnel");
+		stage.setTitle("AstroRunner");
 		stage.setResizable(false);
 		stage.show();
 	}
 
 	private void update(GraphicsContext gc, double deltaTime){
-		gc.clearRect(0, 0, WIDTH, HEIGHT);
+		gc.clearRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 		gc.setFill(Color.BLACK);
-		gc.fillRect(0, 0, WIDTH, HEIGHT);
+		gc.fillRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+		gc.save();
+		gc.translate(OFFSET_X, 0);
+		gc.scale(SCALE, SCALE);
 
 		if (this.gameOver){
 			if (this.keys.getOrDefault(KeyCode.SPACE, false)){
@@ -143,21 +156,53 @@ public class MainApplication extends Application{
 		}
 
 		// GAME OVER
-		if (collided == 1){
-			this.updateDelay = 50;
-			this.gamePaused = true;
-			this.gameOver = true;
+		if (collided != 0 && !this.cooldwon){
+			this.cooldwon = true;
+			if (collided == 1){
+				if (this.playerShield){
+					this.playerShield = false;
+				} else {
+					this.updateDelay = 50;
+					this.gamePaused = true;
+					this.gameOver = true;
+				}
+			} else if (collided == 2){ // Random powerup
+				if (Math.random() < 0.5){
+					this.playerShield = true;
+					System.out.println("Shield");
+				} else {
+					this.lastSlowDown = System.currentTimeMillis();
+				}
+			}
+
+			Util.schedule(() -> this.cooldwon = false, 1200);
 		}
 
-		this.player.render(gc, collided);
+		this.player.render(gc, this.playerShield);
 
-		if (this.distanceTravelled > 0 && !this.gameOver){
-			gc.setFill(Color.LIME);
-			gc.setFont(FONT);
-			gc.setTextAlign(TextAlignment.LEFT);
-			gc.fillText(String.format("Score: %d\nSpeed: %.2fkm/h\nDistance: %.2fm", this.score, calculateSpeed(this.updateDelay), this.distanceTravelled), 20, 40);
-		} else {
-			// START SCREEN
+		if (!this.gameOver){
+			if (this.distanceTravelled > 0){
+				gc.setFill(Color.LIME);
+				gc.setFont(FONT);
+				gc.setTextAlign(TextAlignment.LEFT);
+				gc.fillText(String.format("Score: %d\nSpeed: %.2fkm/h\nDistance: %.2fm", this.score, Util.calculateSpeed(this.updateDelay), this.distanceTravelled), 20, 40);
+			} else {
+				// START SCREEN
+				gc.setFill(Color.LIME);
+				gc.setFont(FONT_SMALL);
+				gc.setTextAlign(TextAlignment.CENTER);
+				gc.fillText("SPACE to start/pause\nArrows to rotate\n\n------\nAstroRunner v1.0 by OrangoMango\nMade completely from scratch\nin Java/JavaFX\n\nGMTK and OLC game jam 2024\n(Made in 48h)", WIDTH*0.5, 250);
+			}
+		}
+
+		if (this.lastSlowDown >= 0){
+			long diff = System.currentTimeMillis()-this.lastSlowDown;
+			if (diff <= 3000){
+				// Render UI bar
+				// ...
+			} else {
+				this.lastSlowDown = -1;
+			}
 		}
 
 		if (this.gameOver){
@@ -171,15 +216,8 @@ public class MainApplication extends Application{
 			gc.setTextAlign(TextAlignment.CENTER);
 			gc.fillText(String.format("GAME OVER!\n\nTotal score: %d\nDistance travelled:\n%.2fm", this.score, this.distanceTravelled), WIDTH*0.5, HEIGHT*0.4);
 		}
-	}
 
-	private static double calculateSpeed(int delay){
-		final double minDelay = 5;
-		final double maxDelay = 50;
-		final double minSpeed = 40;
-		final double maxSpeed = 130;
-
-		return (1-(delay-minDelay)/(maxDelay-minDelay))*(maxSpeed-minSpeed)+minSpeed;
+		gc.restore();
 	}
 
 	public static void main(String[] args){

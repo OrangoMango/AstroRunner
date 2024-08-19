@@ -15,7 +15,7 @@ public class Player{
 		return this.points;
 	}
 
-	public void render(GraphicsContext gc, int collided){
+	public void render(GraphicsContext gc, boolean shield){
 		double[] xPoints = new double[this.points.length];
 		double[] yPoints = new double[this.points.length];
 		final double aspectRatio = (double)MainApplication.HEIGHT/MainApplication.WIDTH;
@@ -25,7 +25,7 @@ public class Player{
 			yPoints[i] = (this.points[i].getY()+1)/2*MainApplication.HEIGHT;
 		}
 
-		gc.setStroke(collided == 1 ? Color.RED : (collided == 2 ? Color.LIME : Color.WHITE));
+		gc.setStroke(Color.WHITE);
 		gc.setLineWidth(2);
 		gc.strokePolygon(xPoints, yPoints, this.points.length);
 	}

@@ -7,6 +7,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class Util{
+	public static void schedule(Runnable r, int delay){
+		new Thread(() -> {
+			try {
+				Thread.sleep(delay);
+				r.run();
+			} catch (InterruptedException ex){
+				ex.printStackTrace();
+			}
+		}).start();
+	}
+
 	public static boolean collided(Point2D[] aPoints, Point2D[] bPoints){
 		ArrayList<Point2D[]> edges = new ArrayList<>();
 
@@ -79,5 +90,16 @@ public class Util{
 		}
 
 		return output;
+	}
+
+	public static double calculateSpeed(int delay){
+		final double minDelay = 5;
+		final double maxDelay = 50;
+		final double minSpeed = 40;
+		final double maxSpeed = 130;
+
+		double value = (1-(delay-minDelay)/(maxDelay-minDelay));
+
+		return Math.min(1, Math.max(0, value))*(maxSpeed-minSpeed)+minSpeed;
 	}
 }
