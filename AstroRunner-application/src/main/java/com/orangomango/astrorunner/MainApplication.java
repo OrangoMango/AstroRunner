@@ -27,9 +27,9 @@ public class MainApplication extends Application{
 	private static double SCALE;
 	private static double OFFSET_X;
 
-	private static final Font FONT = Font.loadFont(Resource.toUrl("/files/main_font.otf", MainApplication.class), 25);
-	private static final Font FONT_BIG = Font.loadFont(Resource.toUrl("/files/main_font.otf", MainApplication.class), 35);
-	private static final Font FONT_SMALL = Font.loadFont(Resource.toUrl("/files/main_font.otf", MainApplication.class), 18);
+	private static final Font FONT = Font.loadFont(Resource.toUrl("/files/main_font.ttf", MainApplication.class), 30);
+	private static final Font FONT_BIG = Font.loadFont(Resource.toUrl("/files/main_font.ttf", MainApplication.class), 45);
+	private static final Font FONT_SMALL = Font.loadFont(Resource.toUrl("/files/main_font.ttf", MainApplication.class), 35);
 
 	private ArrayList<Obstacle> obstacles = new ArrayList<>();
 	private int updateDelay = 50;
@@ -57,7 +57,7 @@ public class MainApplication extends Application{
 
 		Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
 		GraphicsContext gc = canvas.getGraphicsContext2D();
-		//gc.setImageSmoothing(false);
+		gc.setImageSmoothing(false);
 		CanvasPane pane = new CanvasPane(canvas, (w, h, newY, sizeChanged) -> {
 			WINDOW_WIDTH = (int)w;
 			WINDOW_HEIGHT = (int)h;
