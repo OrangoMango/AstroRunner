@@ -215,7 +215,7 @@ public class Obstacle{
 		}
 
 		Obstacle obstacle = new Obstacle(polygons, type);
-		if (currentScore > 10) obstacle.powerUp = createRandomPowerUp(zPos-OBSTACLE_DISTANCE*0.5);
+		if (currentScore > 3) obstacle.powerUp = createRandomPowerUp(zPos-OBSTACLE_DISTANCE*0.5);
 		return obstacle;
 	}
 
