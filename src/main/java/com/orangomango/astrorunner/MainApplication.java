@@ -11,6 +11,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.scene.input.KeyCode;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Point2D;
+import javafx.scene.media.MediaPlayer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +26,7 @@ public class MainApplication extends Application{
 
 	private static final Font FONT = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 25);
 	private static final Font FONT_BIG = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 35);
-	private static final Font FONT_SMALL = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 15);
+	private static final Font FONT_SMALL = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 18);
 
 	private ArrayList<Obstacle> obstacles = new ArrayList<>();
 	private int updateDelay = 50;
@@ -40,9 +41,16 @@ public class MainApplication extends Application{
 	private boolean playerShield;
 	private volatile long lastSlowDown = -1;
 	private boolean cooldwon = false;
+	private MediaPlayer mediaPlayer;
+	private int highscore = 0;
 
 	@Override
 	public void start(Stage stage){
+		this.mediaPlayer = new MediaPlayer(AssetLoader.getInstance().getMusic("background.wav"));
+		this.mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+		this.mediaPlayer.setVolume(0.75);
+		this.mediaPlayer.play();
+
 		StackPane pane = new StackPane();
 		Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
 		GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -54,7 +62,7 @@ public class MainApplication extends Application{
 		canvas.setOnKeyReleased(e -> this.keys.put(e.getCode(), false));
 
 		for (int i = 0; i < Obstacle.OBSTACLE_COUNT; i++){
-			this.obstacles.add(Obstacle.createRandomObstacle(5+i*Obstacle.OBSTACLE_DISTANCE));
+			this.obstacles.add(Obstacle.createRandomObstacle(5+i*Obstacle.OBSTACLE_DISTANCE, 0));
 		}
 
 		this.player = new Player(new Point2D(-0.1, 0.7), new Point2D(0.1, 0.7), new Point2D(0.1, 0.9), new Point2D(-0.1, 0.9));
@@ -79,15 +87,17 @@ public class MainApplication extends Application{
 					for (int i = 0; i < this.obstacles.size(); i++){
 						Obstacle o = this.obstacles.get(i);
 						o.setCameraRotation(this.cameraRotAngle);
-						boolean passed = o.update();
+						boolean passed = o.update(this.score);
 						if (passed){
 							this.score++;
+							Util.playSound("score.wav", 0.5);
 						}
 					}
 
 					if (this.score != this.lastScore && this.score % 6 == 0){
-						this.updateDelay = Math.max(this.updateDelay-6, 6);
+						this.updateDelay = Math.max(this.updateDelay-6, 15);
 						this.lastScore = this.score;
+						Util.playSound("speed.wav", 0.85);
 					}
 
 					final int delay = this.updateDelay*(this.lastSlowDown >= 0 ? 2 : 1);
@@ -120,8 +130,11 @@ public class MainApplication extends Application{
 		gc.translate(OFFSET_X, 0);
 		gc.scale(SCALE, SCALE);
 
+		gc.drawImage(AssetLoader.getInstance().getImage("background.jpg"), 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
 		if (this.gameOver){
 			if (this.keys.getOrDefault(KeyCode.SPACE, false)){
+				this.highscore = Math.max(this.score, this.highscore);
 				this.score = 0;
 				this.lastScore = 0;
 				this.distanceTravelled = 0;
@@ -129,18 +142,22 @@ public class MainApplication extends Application{
 				this.gameOver = false;
 				this.obstacles.clear();
 				for (int i = 0; i < Obstacle.OBSTACLE_COUNT; i++){
-					this.obstacles.add(Obstacle.createRandomObstacle(5+i*Obstacle.OBSTACLE_DISTANCE));
+					this.obstacles.add(Obstacle.createRandomObstacle(5+i*Obstacle.OBSTACLE_DISTANCE, 0));
 				}
 				this.keys.put(KeyCode.SPACE, false);
 			}
 		} else {
 			if (this.keys.getOrDefault(KeyCode.LEFT, false)){
 				this.cameraRotAngle -= 4;
+				this.player.frameIndex = 2;
 			} else if (this.keys.getOrDefault(KeyCode.RIGHT, false)){
 				this.cameraRotAngle += 4;
+				this.player.frameIndex = 1;
 			} else if (this.keys.getOrDefault(KeyCode.SPACE, false)){
 				this.gamePaused = !this.gamePaused;
 				this.keys.put(KeyCode.SPACE, false);
+			} else {
+				this.player.frameIndex = 0;
 			}
 		}
 
@@ -161,16 +178,18 @@ public class MainApplication extends Application{
 			if (collided == 1){
 				if (this.playerShield){
 					this.playerShield = false;
-				} else {
+				} else if (!this.gameOver){
 					this.updateDelay = 50;
 					this.gamePaused = true;
 					this.gameOver = true;
+					Util.playSound("gameover.wav", 1);
 				}
 			} else if (collided == 2){ // Random powerup
 				if (Math.random() < 0.5){
+					Util.playSound("powerup.wav", 1);
 					this.playerShield = true;
-					System.out.println("Shield");
 				} else {
+					Util.playSound("powerup2.wav", 1);
 					this.lastSlowDown = System.currentTimeMillis();
 				}
 			}
@@ -185,21 +204,28 @@ public class MainApplication extends Application{
 				gc.setFill(Color.LIME);
 				gc.setFont(FONT);
 				gc.setTextAlign(TextAlignment.LEFT);
-				gc.fillText(String.format("Score: %d\nSpeed: %.2fkm/h\nDistance: %.2fm", this.score, Util.calculateSpeed(this.updateDelay), this.distanceTravelled), 20, 40);
+				gc.fillText(String.format("Score: %d\nSpeed: %.2f km/h\nDistance: %.2f m", this.score, Util.calculateSpeed(this.updateDelay), this.distanceTravelled), 20, 40);
 			} else {
 				// START SCREEN
-				gc.setFill(Color.LIME);
+				gc.save();
+				gc.setGlobalAlpha(0.4);
+				gc.setFill(Color.WHITE);
+				gc.fillRect(0, 0, WIDTH, HEIGHT);
+				gc.restore();
+				gc.setFill(Color.web("#130072"));
 				gc.setFont(FONT_SMALL);
 				gc.setTextAlign(TextAlignment.CENTER);
-				gc.fillText("SPACE to start/pause\nArrows to rotate\n\n------\nAstroRunner v1.0 by OrangoMango\nMade completely from scratch\nin Java/JavaFX\n\nGMTK and OLC game jam 2024\n(Made in 48h)", WIDTH*0.5, 250);
+				gc.fillText("SPACE to start/pause\nArrows to rotate\n\n------\nAstroRunner v1.0 by OrangoMango\nMade completely from scratch\nin Java/JavaFX\n\nGMTK and OLC game jam 2024\n(Made in 48h)", WIDTH*0.5, 200);
+				gc.setFill(Color.RED);
+				gc.setFont(FONT_BIG);
+				gc.fillText("Highscore: "+this.highscore, WIDTH*0.5, 100);
 			}
 		}
 
 		if (this.lastSlowDown >= 0){
 			long diff = System.currentTimeMillis()-this.lastSlowDown;
 			if (diff <= 3000){
-				// Render UI bar
-				// ...
+				// TODO: render UI bar
 			} else {
 				this.lastSlowDown = -1;
 			}
@@ -214,7 +240,7 @@ public class MainApplication extends Application{
 			gc.setFill(Color.RED);
 			gc.setFont(FONT_BIG);
 			gc.setTextAlign(TextAlignment.CENTER);
-			gc.fillText(String.format("GAME OVER!\n\nTotal score: %d\nDistance travelled:\n%.2fm", this.score, this.distanceTravelled), WIDTH*0.5, HEIGHT*0.4);
+			gc.fillText(String.format("GAME OVER!\n\nTotal score: %d\nDistance travelled:\n%.2f m", this.score, this.distanceTravelled), WIDTH*0.5, HEIGHT*0.4);
 		}
 
 		gc.restore();

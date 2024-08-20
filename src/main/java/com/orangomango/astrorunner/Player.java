@@ -1,11 +1,11 @@
 package com.orangomango.astrorunner;
 
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import javafx.geometry.Point2D;
 
 public class Player{
 	private Point2D[] points;
+	public int frameIndex;
 
 	public Player(Point2D... p){
 		this.points = p;
@@ -25,8 +25,18 @@ public class Player{
 			yPoints[i] = (this.points[i].getY()+1)/2*MainApplication.HEIGHT;
 		}
 
-		gc.setStroke(Color.WHITE);
-		gc.setLineWidth(2);
-		gc.strokePolygon(xPoints, yPoints, this.points.length);
+		double minX = Double.POSITIVE_INFINITY;
+		double minY = Double.POSITIVE_INFINITY;
+		double maxX = Double.NEGATIVE_INFINITY;
+		double maxY = Double.NEGATIVE_INFINITY;
+
+		for (int i = 0; i < this.points.length; i++){
+			minX = Math.min(xPoints[i], minX);
+			minY = Math.min(yPoints[i], minY);
+			maxX = Math.max(xPoints[i], maxX);
+			maxY = Math.max(yPoints[i], maxY);
+		}
+
+		gc.drawImage(AssetLoader.getInstance().getImage("player.png"), 1+34*(shield ? this.frameIndex+3 : this.frameIndex), 1, 32, 32, minX, minY, maxX-minX, maxY-minY);
 	}
 }

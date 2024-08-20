@@ -1,7 +1,6 @@
 package com.orangomango.astrorunner;
 
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import javafx.geometry.Point2D;
 import javafx.geometry.Point3D;
 
@@ -12,7 +11,6 @@ import java.util.Arrays;
 public class Obstacle{
 	private ArrayList<Point3D[]> polygons;
 	private double rotAngle, startAngle, dropAngle, startDropAngle;
-	private Color color;
 	private boolean rotates;
 	private Point3D[] powerUp;
 	private int type;
@@ -25,8 +23,7 @@ public class Obstacle{
 	public Obstacle(ArrayList<Point3D[]> pol, int type){
 		this.type = type;
 		this.polygons = pol;
-		this.color = Color.color(Math.random(), Math.random(), Math.random());
-		this.rotates = Math.random() < 0.3;
+		this.rotates = Math.random() < 0.35;
 
 		Random random = new Random();
 		this.startAngle = random.nextInt(360);
@@ -44,7 +41,7 @@ public class Obstacle{
 		return this.polygons.get(0)[0].getZ();
 	}
 
-	public boolean update(){
+	public boolean update(int currentScore){
 		final double travelSpeed = 0.1;
 
 		for (Point3D[] points : this.polygons){
@@ -70,12 +67,11 @@ public class Obstacle{
 			passed = true;
 
 			// Reset
-			Obstacle newObstacle = createRandomObstacle(5+(OBSTACLE_COUNT-1)*OBSTACLE_DISTANCE);
+			Obstacle newObstacle = createRandomObstacle(5+(OBSTACLE_COUNT-1)*OBSTACLE_DISTANCE, currentScore);
 			this.type = newObstacle.type;
 			this.polygons = newObstacle.polygons;
 			this.rotAngle = newObstacle.rotAngle;
 			this.startAngle = newObstacle.startAngle;
-			this.color = newObstacle.color;
 			this.rotates = newObstacle.rotates;
 			this.powerUp = newObstacle.powerUp;
 		}
@@ -105,13 +101,10 @@ public class Obstacle{
 		Point2D maxPoint = Util.mapPoint(Util.project(new Point3D(maxX, maxY, getDepth())));
 
 		gc.save();
-		//gc.setStroke(this.color);
-		//gc.setLineWidth(3);
 		gc.translate(MainApplication.WIDTH*0.5, MainApplication.HEIGHT*0.5);
 		gc.rotate(this.rotAngle);
 		
 		gc.drawImage(AssetLoader.getInstance().getImage("obstacle_type"+this.type+".png"), minPoint.getX()-MainApplication.WIDTH*0.5, minPoint.getY()-MainApplication.HEIGHT*0.5, maxPoint.getX()-minPoint.getX(), maxPoint.getY()-minPoint.getY());
-		//gc.strokeRect(minPoint.getX()-MainApplication.WIDTH*0.5, minPoint.getY()-MainApplication.HEIGHT*0.5, maxPoint.getX()-minPoint.getX(), maxPoint.getY()-minPoint.getY());
 
 		gc.restore();
 
@@ -137,9 +130,6 @@ public class Obstacle{
 				xPoints[i] = a.getX();
 				yPoints[i] = a.getY();
 			}
-
-			//gc.setFill(this.color);
-			//gc.fillPolygon(xPoints, yPoints, projected.size());
 		}
 
 		// Render the powerup
@@ -165,8 +155,19 @@ public class Obstacle{
 					yPoints[i] = a.getY();
 				}
 
-				gc.setFill(this.color.darker());
-				gc.fillPolygon(xPoints, yPoints, projected.size());
+				double pminX = Double.POSITIVE_INFINITY;
+				double pminY = Double.POSITIVE_INFINITY;
+				double pmaxX = Double.NEGATIVE_INFINITY;
+				double pmaxY = Double.NEGATIVE_INFINITY;
+
+				for (int i = 0; i < projected.size(); i++){
+					pminX = Math.min(xPoints[i], pminX);
+					pminY = Math.min(yPoints[i], pminY);
+					pmaxX = Math.max(xPoints[i], pmaxX);
+					pmaxY = Math.max(yPoints[i], pmaxY);
+				}
+
+				gc.drawImage(AssetLoader.getInstance().getImage("powerup.png"), pminX, pminY, pmaxX-pminX, pmaxY-pminY);
 			}
 		}
 
@@ -188,7 +189,7 @@ public class Obstacle{
 		}
 	}
 
-	private static Obstacle createObstacle(int type, double zPos){
+	private static Obstacle createObstacle(int type, int currentScore, double zPos){
 		ArrayList<Point3D[]> polygons = new ArrayList<>();
 
 		if (type == 0){ // Rectangle
@@ -214,12 +215,12 @@ public class Obstacle{
 		}
 
 		Obstacle obstacle = new Obstacle(polygons, type);
-		obstacle.powerUp = createRandomPowerUp(zPos-OBSTACLE_DISTANCE*0.5);
+		if (currentScore > 10) obstacle.powerUp = createRandomPowerUp(zPos-OBSTACLE_DISTANCE*0.5);
 		return obstacle;
 	}
 
-	public static Obstacle createRandomObstacle(double zPos){
+	public static Obstacle createRandomObstacle(double zPos, int currentScore){
 		Random random = new Random();
-		return createObstacle(random.nextInt(5), zPos);
+		return createObstacle(random.nextInt(5), currentScore, zPos);
 	}
 }

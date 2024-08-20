@@ -2,6 +2,7 @@ package com.orangomango.astrorunner;
 
 import javafx.geometry.Point2D;
 import javafx.geometry.Point3D;
+import javafx.scene.media.AudioClip;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +17,12 @@ public class Util{
 				ex.printStackTrace();
 			}
 		}).start();
+	}
+
+	public static void playSound(String name, double volume){
+		AudioClip clip = AssetLoader.getInstance().getAudio(name);
+		clip.setVolume(volume);
+		clip.play();
 	}
 
 	public static boolean collided(Point2D[] aPoints, Point2D[] bPoints){
@@ -93,7 +100,7 @@ public class Util{
 	}
 
 	public static double calculateSpeed(int delay){
-		final double minDelay = 5;
+		final double minDelay = 15;
 		final double maxDelay = 50;
 		final double minSpeed = 40;
 		final double maxSpeed = 130;

@@ -3,3 +3,14 @@
 /images/obstacle_type2.png
 /images/obstacle_type3.png
 /images/obstacle_type4.png
+/images/background.jpg
+/images/player.png
+/images/powerup.png
+
+/audio/gameover.wav
+/audio/powerup.wav
+/audio/powerup2.wav
+/audio/score.wav
+/audio/speed.wav
+
+/audio/background.wav
