@@ -3,7 +3,6 @@ package com.orangomango.astrorunner;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
 import javafx.scene.canvas.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -19,14 +18,14 @@ import java.util.HashMap;
 public class MainApplication extends Application{
 	public static final int WIDTH = 800;
 	public static final int HEIGHT = 600;
-	private static final int WINDOW_WIDTH = 800;
-	private static final int WINDOW_HEIGHT = 600;
-	private static final double SCALE = (double)WINDOW_HEIGHT/HEIGHT;
-	private static final double OFFSET_X = (WINDOW_WIDTH-WIDTH*SCALE)/2;
+	private static int WINDOW_WIDTH = 800;
+	private static int WINDOW_HEIGHT = 600;
+	private static double SCALE = (double)WINDOW_HEIGHT/HEIGHT;
+	private static double OFFSET_X = (WINDOW_WIDTH-WIDTH*SCALE)/2;
 
-	private static final Font FONT = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 25);
-	private static final Font FONT_BIG = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 35);
-	private static final Font FONT_SMALL = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.otf"), 18);
+	private static final Font FONT = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.ttf"), 30);
+	private static final Font FONT_BIG = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.ttf"), 45);
+	private static final Font FONT_SMALL = Font.loadFont(MainApplication.class.getResourceAsStream("/files/main_font.ttf"), 35);
 
 	private ArrayList<Obstacle> obstacles = new ArrayList<>();
 	private int updateDelay = 50;
@@ -51,11 +50,15 @@ public class MainApplication extends Application{
 		this.mediaPlayer.setVolume(0.75);
 		this.mediaPlayer.play();
 
-		StackPane pane = new StackPane();
 		Canvas canvas = new Canvas(WINDOW_WIDTH, WINDOW_HEIGHT);
 		GraphicsContext gc = canvas.getGraphicsContext2D();
 		gc.setImageSmoothing(false);
-		pane.getChildren().add(canvas);
+		CanvasPane pane = new CanvasPane(canvas, (w, h) -> {
+			WINDOW_WIDTH = (int)w;
+			WINDOW_HEIGHT = (int)h;
+			SCALE = (double)WINDOW_HEIGHT/HEIGHT;
+			OFFSET_X = (WINDOW_WIDTH-WIDTH*SCALE)/2;
+		});
 
 		canvas.setFocusTraversable(true);
 		canvas.setOnKeyPressed(e -> this.keys.put(e.getCode(), true));
@@ -117,7 +120,6 @@ public class MainApplication extends Application{
 
 		stage.setScene(scene);
 		stage.setTitle("AstroRunner");
-		stage.setResizable(false);
 		stage.getIcons().add(AssetLoader.getInstance().getImage("icon.png"));
 		stage.show();
 	}
@@ -131,7 +133,7 @@ public class MainApplication extends Application{
 		gc.translate(OFFSET_X, 0);
 		gc.scale(SCALE, SCALE);
 
-		gc.drawImage(AssetLoader.getInstance().getImage("background.jpg"), 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+		gc.drawImage(AssetLoader.getInstance().getImage("background.jpg"), 0, 0, WIDTH, HEIGHT);
 
 		if (this.gameOver){
 			if (this.keys.getOrDefault(KeyCode.SPACE, false)){
