@@ -118,6 +118,7 @@ public class MainApplication extends Application{
 		stage.setScene(scene);
 		stage.setTitle("AstroRunner");
 		stage.setResizable(false);
+		stage.getIcons().add(AssetLoader.getInstance().getImage("icon.png"));
 		stage.show();
 	}
 
@@ -147,17 +148,21 @@ public class MainApplication extends Application{
 				this.keys.put(KeyCode.SPACE, false);
 			}
 		} else {
-			if (this.keys.getOrDefault(KeyCode.LEFT, false)){
-				this.cameraRotAngle -= 4;
-				this.player.frameIndex = 2;
-			} else if (this.keys.getOrDefault(KeyCode.RIGHT, false)){
-				this.cameraRotAngle += 4;
-				this.player.frameIndex = 1;
-			} else if (this.keys.getOrDefault(KeyCode.SPACE, false)){
+			if (!this.gamePaused){
+				if (this.keys.getOrDefault(KeyCode.LEFT, false)){
+					this.cameraRotAngle -= 4;
+					this.player.frameIndex = 2;
+				} else if (this.keys.getOrDefault(KeyCode.RIGHT, false)){
+					this.cameraRotAngle += 4;
+					this.player.frameIndex = 1;
+				} else {
+					this.player.frameIndex = 0;
+				}
+			}
+
+			if (this.keys.getOrDefault(KeyCode.SPACE, false)){
 				this.gamePaused = !this.gamePaused;
 				this.keys.put(KeyCode.SPACE, false);
-			} else {
-				this.player.frameIndex = 0;
 			}
 		}
 
@@ -194,7 +199,7 @@ public class MainApplication extends Application{
 				}
 			}
 
-			Util.schedule(() -> this.cooldwon = false, 1200);
+			Util.schedule(() -> this.cooldwon = false, this.updateDelay*50);
 		}
 
 		this.player.render(gc, this.playerShield);
