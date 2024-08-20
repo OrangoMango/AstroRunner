@@ -8,8 +8,7 @@ Game page: https://orangomango.itch.io/astrorunner
 # How to play
 Use the arrows to rotate the ship and space to pause/resume. Remember to collect  the power-ups on the way :)
 
-# Screenshot
-![Screenshot from 2024-08-20 14-30-25](https://github.com/user-attachments/assets/720d31d9-fb86-4934-8d68-e89d99e883ca)
+![GIF_20240820_173449_091](https://github.com/user-attachments/assets/fb7e93ab-4cc9-4d3d-a0c9-4b2f3d17f736)
 
 ----
 **Developed in around 48h without an engine. Made completely from scratch in Java with the JavaFX framework.**  
